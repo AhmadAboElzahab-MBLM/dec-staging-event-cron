@@ -16,10 +16,7 @@ export function filterEventsByVenue(
   venue: string
 ): CrmEvent[] {
   const filteredEvents = events.filter(
-    (event) =>
-      event.eventVenues &&
-      event.eventVenues.includes(venue) &&
-      event.WebsiteStatus.toLowerCase() === "online"
+    (event) => event.eventVenues && event.eventVenues.includes(venue)
   );
   return filteredEvents;
 }
@@ -59,6 +56,91 @@ export function compareEvents(
   return { toUpdate, toCreate };
 }
 
+/**
+ * Build social networks block list structure for Umbraco
+ */
+function buildSocialNetworksBlockList(socialMedia: CrmEvent["socialMedia"]) {
+  const contentData: any[] = [];
+  const layout: any[] = [];
+
+  // Only add social networks that have valid URLs from CRM data
+  const socialNetworks = [
+    {
+      key: "facebook",
+      name: "Facebook",
+      url: socialMedia?.facebook,
+    },
+    {
+      key: "linkedIn",
+      name: "LinkedIn",
+      url: socialMedia?.linkedIn,
+    },
+    {
+      key: "instagram",
+      name: "Instagram",
+      url: socialMedia?.instagram,
+    },
+    {
+      key: "youtube",
+      name: "Youtube",
+      url: socialMedia?.youtube,
+    },
+    {
+      key: "tiktok",
+      name: "TikTok",
+      url: socialMedia?.tiktok,
+    },
+  ];
+
+  socialNetworks.forEach((network) => {
+    // Only add if URL exists and is not empty/whitespace
+    if (network.url && network.url.trim() !== "") {
+      const guid = generateGuid();
+      const guidWithoutHyphens = guid.replace(/-/g, "");
+      const udi = `umb://element/${guidWithoutHyphens}`;
+
+      layout.push({ contentUdi: udi });
+      contentData.push({
+        contentTypeKey: "93f63d80-3828-4be7-9043-143bd100ca14",
+        udi: udi,
+        socialNetwork: [network.name],
+        link: [
+          {
+            icon: "icon-link",
+            name: null,
+            nodeName: null,
+            published: true,
+            queryString: null,
+            target: "_blank",
+            trashed: false,
+            udi: null,
+            url: network.url,
+          },
+        ],
+      });
+    }
+  });
+
+  const blockListStructure = {
+    layout: { "Umbraco.BlockList": layout },
+    contentData,
+    settingsData: [],
+  };
+
+  return blockListStructure;
+}
+
+/**
+ * Generate a simple GUID for Umbraco element UDIs
+ */
+function generateGuid(): string {
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 export function mapCrmEventToUmbraco(
   crmEvent: CrmEvent,
   parentId?: string
@@ -68,68 +150,75 @@ export function mapCrmEventToUmbraco(
       "en-US": crmEvent.title,
       ar: crmEvent.title,
     },
-    contentTypeAlias: "event",
+    contentTypeAlias: "decEvent",
     title: {
       "en-US": crmEvent.title,
       ar: crmEvent.title,
     },
+    subtitle: {
+      "en-US": "",
+      ar: "",
+    },
     description: {
-      "en-US": crmEvent.pageContent,
-      ar: crmEvent.pageContent,
+      "en-US": crmEvent.pageContent || "",
+      ar: crmEvent.pageContent || "",
     },
-    location: {
-      "en-US": crmEvent.location,
-      ar: crmEvent.location,
+    metadataTitle: {
+      "en-US": crmEvent.title,
+      ar: crmEvent.title,
     },
-    eventOrganiser: {
-      "en-US": crmEvent.eventOrganiser,
-      ar: crmEvent.eventOrganiser,
+    metadataDescription: {
+      "en-US": crmEvent.pageContent || "",
+      ar: crmEvent.pageContent || "",
     },
-    websiteURL: {
-      "en-US": crmEvent.websiteURL,
-      ar: crmEvent.websiteURL,
+    metadataKeywords: {
+      "en-US": "",
+      ar: "",
     },
-    eventId: {
-      $invariant: crmEvent.eventId,
+    disableSearchEngineIndexing: {
+      $invariant: "0",
     },
-    lastUpdatedDate: {
-      $invariant: `"${crmEvent.lastUpdatedDate}"`,
-    },
-    facebook: {
-      "en-US": crmEvent.socialMedia?.facebook || null,
-      ar: crmEvent.socialMedia?.facebook || null,
-    },
-    linkedIn: {
-      "en-US": crmEvent.socialMedia?.linkedIn || null,
-      ar: crmEvent.socialMedia?.linkedIn || null,
-    },
-    twitter: {
-      "en-US": null,
-      ar: null,
-    },
-    instagram: {
-      "en-US": crmEvent.socialMedia?.instagram || null,
-      ar: crmEvent.socialMedia?.instagram || null,
-    },
-    youtube: {
-      "en-US": crmEvent.socialMedia?.youtube || null,
-      ar: crmEvent.socialMedia?.youtube || null,
-    },
-    tiktok: {
-      "en-US": crmEvent.socialMedia?.tiktok || null,
-      ar: crmEvent.socialMedia?.tiktok || null,
-    },
-    startDate: {
+    date: {
       $invariant: crmEvent.startDate,
+    },
+    category: {
+      $invariant: crmEvent.eventType ? [crmEvent.eventType] : [],
+    },
+    tags: {
+      $invariant: [],
+    },
+    showNotifications: {
+      $invariant: "0",
     },
     endDate: {
       $invariant: crmEvent.endDate,
     },
-    eventType: {
-      $invariant: crmEvent.eventType,
+    organiserName: {
+      $invariant: crmEvent.eventOrganiser || "",
     },
-    eventVenues: {
-      $invariant: crmEvent.eventVenues,
+    organiserSocialNetworks: {
+      $invariant: buildSocialNetworksBlockList(crmEvent.socialMedia),
+    },
+    eventId: {
+      $invariant: crmEvent.eventId.toString(),
+    },
+    lastUpdatedDate: {
+      $invariant: `"${crmEvent.lastUpdatedDate}"`,
+    },
+    location: {
+      $invariant: crmEvent.location || null,
+    },
+    eventVenue: {
+      $invariant: crmEvent.eventVenues || [],
+    },
+    newEventVenue: {
+      $invariant: [],
+    },
+    audience: {
+      $invariant: crmEvent.eventAudiences ? [crmEvent.eventAudiences] : [],
+    },
+    industry: {
+      $invariant: crmEvent.eventSectors || [],
     },
   };
 

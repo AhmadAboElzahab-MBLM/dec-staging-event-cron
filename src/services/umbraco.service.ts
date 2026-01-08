@@ -8,7 +8,7 @@ import type {
 
 interface UmbracoGraphQLResponse {
   data: {
-    allEvent: {
+    allDecEvent: {
       items: UmbracoEvent[];
     };
   };
@@ -28,7 +28,7 @@ export async function fetchUmbracoEvents(
       body: JSON.stringify({
         query: `
           query {
-            allEvent {
+            allDecEvent {
               items {
                 id
                 eventId
@@ -44,7 +44,7 @@ export async function fetchUmbracoEvents(
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
     const data: UmbracoGraphQLResponse = await response.json();
-    return { success: true, data: data.data.allEvent.items };
+    return { success: true, data: data.data.allDecEvent.items };
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error occurred";

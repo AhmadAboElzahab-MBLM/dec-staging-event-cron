@@ -70,27 +70,62 @@ export interface InvariantField<T = string> {
   $invariant: T;
 }
 
+export interface SocialNetworkBlockItem {
+  contentTypeKey: string;
+  udi: string;
+  socialNetwork: string[];
+  link: Array<{
+    icon: string;
+    name: string | null;
+    nodeName: string | null;
+    published: boolean;
+    queryString: string | null;
+    target: string | null;
+    trashed: boolean;
+    udi: string | null;
+    url: string;
+  }>;
+}
+
+export interface BlockListStructure {
+  layout: {
+    "Umbraco.BlockList": Array<{
+      contentUdi: string;
+    }>;
+  };
+  contentData: SocialNetworkBlockItem[];
+  settingsData: any[];
+}
+
 export interface CreateEventRequest {
   name: LocalizedField;
   contentTypeAlias: string;
   title: LocalizedField;
+  subtitle?: LocalizedField;
   description: LocalizedField;
-  location: LocalizedField<string | null>;
-  eventOrganiser: LocalizedField;
-  websiteURL: LocalizedField<string | null>;
-  eventId: InvariantField<number>;
-  lastUpdatedDate: InvariantField;
-  facebook: LocalizedField<string | null>;
-  linkedIn: LocalizedField<string | null>;
-  twitter: LocalizedField<string | null>;
-  instagram: LocalizedField<string | null>;
-  youtube: LocalizedField<string | null>;
-  tiktok: LocalizedField<string | null>;
-  parentId: string;
-  startDate: InvariantField;
+  featuredImage?: InvariantField<any[]>;
+  metadataTitle?: LocalizedField;
+  metadataDescription?: LocalizedField;
+  metadataKeywords?: LocalizedField;
+  disableSearchEngineIndexing?: InvariantField<string>;
+  date: InvariantField;
+  category?: InvariantField<string[]>;
+  tags?: InvariantField<any[]>;
+  showNotifications?: InvariantField<string>;
   endDate: InvariantField;
-  eventType: InvariantField;
-  eventVenues: InvariantField<string[]>;
+  organiserLogo?: InvariantField<any[]>;
+  organiserName?: InvariantField<string>;
+  organiserWebsite?: InvariantField<any[]>;
+  organiserSocialNetworks?: InvariantField<BlockListStructure>;
+  eventId: InvariantField<string>;
+  lastUpdatedDate: InvariantField<string>;
+  location: InvariantField<string | null>;
+  eventVenue?: InvariantField<string[]>;
+  newEventVenue?: InvariantField<string[]>;
+  audience?: InvariantField<string[]>;
+  industry?: InvariantField<string[]>;
+  pageBlocks?: LocalizedField<any>;
+  parentId: string;
 }
 
 export interface UmbracoContentResponse {
