@@ -155,10 +155,6 @@ export function mapCrmEventToUmbraco(
       "en-US": crmEvent.title,
       ar: crmEvent.title,
     },
-    subtitle: {
-      "en-US": "",
-      ar: "",
-    },
     description: {
       "en-US": crmEvent.pageContent || "",
       ar: crmEvent.pageContent || "",
@@ -175,26 +171,33 @@ export function mapCrmEventToUmbraco(
       "en-US": "",
       ar: "",
     },
-    disableSearchEngineIndexing: {
-      $invariant: "0",
-    },
+
     date: {
       $invariant: crmEvent.startDate,
     },
     category: {
       $invariant: crmEvent.eventType ? [crmEvent.eventType] : [],
     },
-    tags: {
-      $invariant: [],
-    },
-    showNotifications: {
-      $invariant: "0",
-    },
     endDate: {
       $invariant: crmEvent.endDate,
     },
     organiserName: {
       $invariant: crmEvent.eventOrganiser || "",
+    },
+    organiserWebsite: {
+      $invariant: [
+        {
+          icon: "icon-link",
+          name: crmEvent.websiteURL,
+          nodeName: null,
+          published: true,
+          queryString: null,
+          target: null,
+          trashed: false,
+          udi: null,
+          url: crmEvent.websiteURL,
+        },
+      ],
     },
     organiserSocialNetworks: {
       $invariant: buildSocialNetworksBlockList(crmEvent.socialMedia),

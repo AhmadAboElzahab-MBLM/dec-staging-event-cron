@@ -1,6 +1,7 @@
 import { fetchCrmEvents } from "./services/crm.service";
 import {
   fetchUmbracoEvents,
+  fetchEventById,
   createUmbracoEvent,
   updateUmbracoEvent,
   publishUmbracoEvent,
@@ -105,7 +106,48 @@ export default {
     }
 
     for (const { umbracoEvent, crmEvent } of toUpdate) {
-      const eventData = mapCrmEventToUmbraco(crmEvent);
+      // Fetch the full event data first to avoid deleting any fields
+      const fetchResult = await fetchEventById(env, umbracoEvent.id);
+
+      if (!fetchResult.success) {
+        console.error(
+          `❌ Failed to fetch event ${crmEvent.eventId} for update:`,
+          fetchResult.error
+        );
+        failedEvents.push({
+          title: crmEvent.title,
+          eventId: crmEvent.eventId,
+          startDate: crmEvent.startDate,
+          endDate: crmEvent.endDate,
+          location: crmEvent.location,
+          eventType: crmEvent.eventType,
+          eventOrganiser: crmEvent.eventOrganiser,
+          error: fetchResult.error,
+        });
+        continue;
+      }
+
+      const existingEvent = fetchResult.data;
+
+      // Remove read-only fields from existing event
+      delete existingEvent._createDate;
+      delete existingEvent._id;
+      delete existingEvent._hasChildren;
+      delete existingEvent._level;
+      delete existingEvent.sortOrder;
+      delete existingEvent._currentVersionState;
+      delete existingEvent._updateDate;
+      delete existingEvent.rel;
+      delete existingEvent._links;
+
+      const crmEventData = mapCrmEventToUmbraco(crmEvent);
+
+      // Merge: existing event as base, then overwrite only CRM fields
+      const eventData = {
+        ...existingEvent,
+        ...crmEventData,
+      };
+
       const updateResult = await updateUmbracoEvent(
         env,
         umbracoEvent.id,
