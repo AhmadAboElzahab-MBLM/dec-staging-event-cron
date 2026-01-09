@@ -74,7 +74,6 @@ export async function fetchEventById(
     }
 
     const data: any = await response.json();
-    console.log("fetch by id response:", data);
 
     return { success: true, data };
   } catch (error) {
@@ -147,7 +146,6 @@ export async function updateUmbracoEvent(
         body: JSON.stringify({ parentId: env.UMBRACO_PARENT_ID, ...eventData }),
       }
     );
-    console.log("Update payload:", eventData);
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }

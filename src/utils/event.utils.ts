@@ -43,7 +43,10 @@ export function filterEventsByVenue(
   venue: string
 ): CrmEvent[] {
   const filteredEvents = events.filter(
-    (event) => event.eventVenues && event.eventVenues.includes(venue)
+    (event) =>
+      event.eventVenues &&
+      event.eventVenues.includes(venue) &&
+      event.WebsiteStatus.toLowerCase() === "online"
   );
   return filteredEvents;
 }
@@ -223,19 +226,21 @@ function buildPageBlocks(crmEvent: CrmEvent) {
         },
         organiserLogo: [], // TODO: Map from crmEvent.eventLogo if needed
         organiserName: crmEvent.eventOrganiser || "",
-        organiserWebsite: [
-          {
-            icon: "icon-link",
-            name: null,
-            nodeName: null,
-            published: true,
-            queryString: null,
-            target: null,
-            trashed: false,
-            udi: null,
-            url: crmEvent.websiteURL || "",
-          },
-        ],
+        ...(crmEvent.websiteURL && {
+          organiserWebsite: [
+            {
+              icon: "icon-link",
+              name: null,
+              nodeName: null,
+              published: true,
+              queryString: null,
+              target: null,
+              trashed: false,
+              udi: null,
+              url: crmEvent.websiteURL,
+            },
+          ],
+        }),
         socialNetworks: socialNetworks,
       },
       // Block 3: Getting Here (static template)
@@ -381,21 +386,23 @@ function buildPageBlocks(crmEvent: CrmEvent) {
             settingsData: [],
           },
         },
-        organiserLogo: [], // TODO: Map from crmEvent.eventLogo if needed
+        organiserLogo: [],
         organiserName: crmEvent.eventOrganiser || "",
-        organiserWebsite: [
-          {
-            icon: "icon-link",
-            name: null,
-            nodeName: null,
-            published: true,
-            queryString: null,
-            target: "_blank",
-            trashed: false,
-            udi: null,
-            url: crmEvent.websiteURL || "",
-          },
-        ],
+        ...(crmEvent.websiteURL && {
+          organiserWebsite: [
+            {
+              icon: "icon-link",
+              name: null,
+              nodeName: null,
+              published: true,
+              queryString: null,
+              target: "_blank",
+              trashed: false,
+              udi: null,
+              url: crmEvent.websiteURL,
+            },
+          ],
+        }),
         socialNetworks: socialNetworks,
       },
       // Block 3: Image Gallery (static template)
@@ -547,15 +554,10 @@ function updatePageBlocks(
   const updatedEnglishBlocks = JSON.parse(
     JSON.stringify(existingPageBlocks["en-US"])
   );
-  const updatedArabicBlocks = JSON.parse(
-    JSON.stringify(existingPageBlocks.ar)
-  );
+  const updatedArabicBlocks = JSON.parse(JSON.stringify(existingPageBlocks.ar));
 
   // Update English Block 2 (Event Description) - index 1 in contentData
-  if (
-    updatedEnglishBlocks.contentData &&
-    updatedEnglishBlocks.contentData[1]
-  ) {
+  if (updatedEnglishBlocks.contentData && updatedEnglishBlocks.contentData[1]) {
     const eventDescBlock = updatedEnglishBlocks.contentData[1];
 
     // Update event-specific fields only
@@ -568,19 +570,23 @@ function updatePageBlocks(
       },
     };
     eventDescBlock.organiserName = crmEvent.eventOrganiser || "";
-    eventDescBlock.organiserWebsite = [
-      {
-        icon: "icon-link",
-        name: null,
-        nodeName: null,
-        published: true,
-        queryString: null,
-        target: null,
-        trashed: false,
-        udi: null,
-        url: crmEvent.websiteURL || "",
-      },
-    ];
+    if (crmEvent.websiteURL) {
+      eventDescBlock.organiserWebsite = [
+        {
+          icon: "icon-link",
+          name: null,
+          nodeName: null,
+          published: true,
+          queryString: null,
+          target: null,
+          trashed: false,
+          udi: null,
+          url: crmEvent.websiteURL,
+        },
+      ];
+    } else {
+      delete eventDescBlock.organiserWebsite;
+    }
     eventDescBlock.socialNetworks = socialNetworks;
 
     // Keep existing organiserLogo and other fields
@@ -602,19 +608,23 @@ function updatePageBlocks(
       },
     };
     eventDescBlock.organiserName = crmEvent.eventOrganiser || "";
-    eventDescBlock.organiserWebsite = [
-      {
-        icon: "icon-link",
-        name: null,
-        nodeName: null,
-        published: true,
-        queryString: null,
-        target: "_blank",
-        trashed: false,
-        udi: null,
-        url: crmEvent.websiteURL || "",
-      },
-    ];
+    if (crmEvent.websiteURL) {
+      eventDescBlock.organiserWebsite = [
+        {
+          icon: "icon-link",
+          name: null,
+          nodeName: null,
+          published: true,
+          queryString: null,
+          target: "_blank",
+          trashed: false,
+          udi: null,
+          url: crmEvent.websiteURL,
+        },
+      ];
+    } else {
+      delete eventDescBlock.organiserWebsite;
+    }
     eventDescBlock.socialNetworks = socialNetworks;
 
     // Keep existing organiserLogo and other fields
@@ -675,21 +685,23 @@ export function mapCrmEventToUmbraco(
     organiserName: {
       $invariant: crmEvent.eventOrganiser || "",
     },
-    organiserWebsite: {
-      $invariant: [
-        {
-          icon: "icon-link",
-          name: crmEvent.websiteURL,
-          nodeName: null,
-          published: true,
-          queryString: null,
-          target: null,
-          trashed: false,
-          udi: null,
-          url: crmEvent.websiteURL,
-        },
-      ],
-    },
+    ...(crmEvent.websiteURL && {
+      organiserWebsite: {
+        $invariant: [
+          {
+            icon: "icon-link",
+            name: crmEvent.websiteURL,
+            nodeName: null,
+            published: true,
+            queryString: null,
+            target: null,
+            trashed: false,
+            udi: null,
+            url: crmEvent.websiteURL,
+          },
+        ],
+      },
+    }),
     organiserSocialNetworks: {
       $invariant: buildSocialNetworksBlockList(crmEvent.socialMedia),
     },
@@ -773,21 +785,23 @@ export function mapCrmEventForUpdate(
     organiserName: {
       $invariant: crmEvent.eventOrganiser || "",
     },
-    organiserWebsite: {
-      $invariant: [
-        {
-          icon: "icon-link",
-          name: crmEvent.websiteURL,
-          nodeName: null,
-          published: true,
-          queryString: null,
-          target: null,
-          trashed: false,
-          udi: null,
-          url: crmEvent.websiteURL,
-        },
-      ],
-    },
+    ...(crmEvent.websiteURL && {
+      organiserWebsite: {
+        $invariant: [
+          {
+            icon: "icon-link",
+            name: crmEvent.websiteURL,
+            nodeName: null,
+            published: true,
+            queryString: null,
+            target: null,
+            trashed: false,
+            udi: null,
+            url: crmEvent.websiteURL,
+          },
+        ],
+      },
+    }),
     organiserSocialNetworks: {
       $invariant: buildSocialNetworksBlockList(crmEvent.socialMedia),
     },
@@ -813,9 +827,8 @@ export function mapCrmEventForUpdate(
       $invariant: crmEvent.eventSectors || [],
     },
     // Update page blocks while preserving existing structure and GUIDs
-    pageBlocks:
-      existingUmbracoEvent.pageBlocks
-        ? updatePageBlocks(existingUmbracoEvent.pageBlocks, crmEvent)
-        : buildPageBlocks(crmEvent), // Fallback to new blocks if none exist
+    pageBlocks: existingUmbracoEvent.pageBlocks
+      ? updatePageBlocks(existingUmbracoEvent.pageBlocks, crmEvent)
+      : buildPageBlocks(crmEvent), // Fallback to new blocks if none exist
   };
 }
