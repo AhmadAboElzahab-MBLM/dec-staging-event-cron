@@ -528,6 +528,110 @@ function buildPageBlocks(crmEvent: CrmEvent) {
   };
 }
 
+/**
+ * Update existing page blocks with new CRM data
+ * Preserves existing block structure and GUIDs, only updates event-specific content in block 2 (Event Description)
+ *
+ * @param existingPageBlocks - The current pageBlocks structure from Umbraco
+ * @param crmEvent - New CRM event data
+ * @returns Updated page blocks with preserved structure
+ */
+function updatePageBlocks(
+  existingPageBlocks: { "en-US": any; ar: any },
+  crmEvent: CrmEvent
+) {
+  // Build new social networks from CRM data
+  const socialNetworks = buildSocialNetworksBlockList(crmEvent.socialMedia);
+
+  // Deep clone existing page blocks to avoid mutations
+  const updatedEnglishBlocks = JSON.parse(
+    JSON.stringify(existingPageBlocks["en-US"])
+  );
+  const updatedArabicBlocks = JSON.parse(
+    JSON.stringify(existingPageBlocks.ar)
+  );
+
+  // Update English Block 2 (Event Description) - index 1 in contentData
+  if (
+    updatedEnglishBlocks.contentData &&
+    updatedEnglishBlocks.contentData[1]
+  ) {
+    const eventDescBlock = updatedEnglishBlocks.contentData[1];
+
+    // Update event-specific fields only
+    eventDescBlock.description = {
+      markup: `<p>${crmEvent.pageContent || ""}</p>`,
+      blocks: {
+        layout: null,
+        contentData: [],
+        settingsData: [],
+      },
+    };
+    eventDescBlock.organiserName = crmEvent.eventOrganiser || "";
+    eventDescBlock.organiserWebsite = [
+      {
+        icon: "icon-link",
+        name: null,
+        nodeName: null,
+        published: true,
+        queryString: null,
+        target: null,
+        trashed: false,
+        udi: null,
+        url: crmEvent.websiteURL || "",
+      },
+    ];
+    eventDescBlock.socialNetworks = socialNetworks;
+
+    // Keep existing organiserLogo and other fields
+    // Only update if you have new logo data from CRM
+    // eventDescBlock.organiserLogo = ...; // TODO: Update if needed
+  }
+
+  // Update Arabic Block 2 (Event Description) - index 1 in contentData
+  if (updatedArabicBlocks.contentData && updatedArabicBlocks.contentData[1]) {
+    const eventDescBlock = updatedArabicBlocks.contentData[1];
+
+    // Update event-specific fields only
+    eventDescBlock.description = {
+      markup: `<p>${crmEvent.pageContent || ""}</p>`,
+      blocks: {
+        layout: null,
+        contentData: [],
+        settingsData: [],
+      },
+    };
+    eventDescBlock.organiserName = crmEvent.eventOrganiser || "";
+    eventDescBlock.organiserWebsite = [
+      {
+        icon: "icon-link",
+        name: null,
+        nodeName: null,
+        published: true,
+        queryString: null,
+        target: "_blank",
+        trashed: false,
+        udi: null,
+        url: crmEvent.websiteURL || "",
+      },
+    ];
+    eventDescBlock.socialNetworks = socialNetworks;
+
+    // Keep existing organiserLogo and other fields
+    // Only update if you have new logo data from CRM
+    // eventDescBlock.organiserLogo = ...; // TODO: Update if needed
+  }
+
+  return {
+    "en-US": updatedEnglishBlocks,
+    ar: updatedArabicBlocks,
+  };
+}
+
+/**
+ * Map CRM event to Umbraco format for CREATE operations
+ * Generates completely new page blocks with new GUIDs
+ */
 export function mapCrmEventToUmbraco(
   crmEvent: CrmEvent,
   parentId?: string
@@ -618,4 +722,100 @@ export function mapCrmEventToUmbraco(
   }
 
   return baseData;
+}
+
+/**
+ * Map CRM event to Umbraco format for UPDATE operations
+ * Preserves existing page blocks structure and only updates event-specific content
+ *
+ * @param crmEvent - New CRM event data
+ * @param existingUmbracoEvent - Current event data from Umbraco (full response object)
+ * @returns Partial update payload with preserved page blocks
+ */
+export function mapCrmEventForUpdate(
+  crmEvent: CrmEvent,
+  existingUmbracoEvent: any
+): Partial<CreateEventRequest> {
+  return {
+    name: {
+      "en-US": crmEvent.title,
+      ar: crmEvent.title,
+    },
+    title: {
+      "en-US": crmEvent.title,
+      ar: crmEvent.title,
+    },
+    description: {
+      "en-US": crmEvent.pageContent || "",
+      ar: crmEvent.pageContent || "",
+    },
+    metadataTitle: {
+      "en-US": crmEvent.title,
+      ar: crmEvent.title,
+    },
+    metadataDescription: {
+      "en-US": crmEvent.pageContent || "",
+      ar: crmEvent.pageContent || "",
+    },
+    metadataKeywords: {
+      "en-US": "",
+      ar: "",
+    },
+    date: {
+      $invariant: crmEvent.startDate,
+    },
+    category: {
+      $invariant: crmEvent.eventType ? [crmEvent.eventType] : [],
+    },
+    endDate: {
+      $invariant: crmEvent.endDate,
+    },
+    organiserName: {
+      $invariant: crmEvent.eventOrganiser || "",
+    },
+    organiserWebsite: {
+      $invariant: [
+        {
+          icon: "icon-link",
+          name: crmEvent.websiteURL,
+          nodeName: null,
+          published: true,
+          queryString: null,
+          target: null,
+          trashed: false,
+          udi: null,
+          url: crmEvent.websiteURL,
+        },
+      ],
+    },
+    organiserSocialNetworks: {
+      $invariant: buildSocialNetworksBlockList(crmEvent.socialMedia),
+    },
+    eventId: {
+      $invariant: crmEvent.eventId.toString(),
+    },
+    lastUpdatedDate: {
+      $invariant: `"${crmEvent.lastUpdatedDate}"`,
+    },
+    location: {
+      $invariant: crmEvent.location || null,
+    },
+    eventVenue: {
+      $invariant: crmEvent.eventVenues || [],
+    },
+    newEventVenue: {
+      $invariant: [],
+    },
+    audience: {
+      $invariant: crmEvent.eventAudiences ? [crmEvent.eventAudiences] : [],
+    },
+    industry: {
+      $invariant: crmEvent.eventSectors || [],
+    },
+    // Update page blocks while preserving existing structure and GUIDs
+    pageBlocks:
+      existingUmbracoEvent.pageBlocks
+        ? updatePageBlocks(existingUmbracoEvent.pageBlocks, crmEvent)
+        : buildPageBlocks(crmEvent), // Fallback to new blocks if none exist
+  };
 }

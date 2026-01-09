@@ -11,6 +11,7 @@ import {
   filterEventsByVenue,
   compareEvents,
   mapCrmEventToUmbraco,
+  mapCrmEventForUpdate,
 } from "./utils/event.utils";
 import type { Env, CreateEventRequest } from "./types/events.types";
 
@@ -140,7 +141,8 @@ export default {
       delete existingEvent.rel;
       delete existingEvent._links;
 
-      const crmEventData = mapCrmEventToUmbraco(crmEvent);
+      // Use the new update mapping function that preserves page blocks structure
+      const crmEventData = mapCrmEventForUpdate(crmEvent, existingEvent);
 
       // Merge: existing event as base, then overwrite only CRM fields
       const eventData = {
